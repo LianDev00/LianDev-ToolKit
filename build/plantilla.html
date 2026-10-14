@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auditoría de licencias &mdash; {{Equipo.Nombre}}</title>
+<style>
+/* ==========================================================================
+   Sistema de diseño Lian-Dev — https://claude.ai/artifact/WHDKSRQADjH8SYZ8nNeY4u
+   Los tokens de abajo son un espejo literal de project/tokens.json del sistema.
+   Van embebidos porque el informe tiene que abrir sin conexión en el equipo
+   del cliente. Si cambias un valor aquí, cámbialo también en el sistema.
+   ========================================================================== */
+:root {
+  /* color — tema claro */
+  --surface-base:    #ffffff;
+  --surface-raised:  #f5f5f7;
+  --surface-sunken:  #fafafc;
+  --surface-overlay: #ffffff;
+  --ink-primary:     #1d1d1f;
+  --ink-secondary:   #515154;
+  --ink-tertiary:    #6e6e73;
+  --ink-inverse:     #ffffff;
+  --accent:          #0071e3;
+  --accent-soft:     #e8f2fd;
+  --success:         #248a3d;
+  --warning:         #8f5a00;
+  --danger:          #d70015;
+  --border-subtle:   #d2d2d7;
+  --border-strong:   #86868b;
+
+  /* espacio */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px; --space-5: 24px;
+  --space-6: 32px; --space-7: 48px; --space-8: 64px; --space-9: 96px;
+
+  /* radio */
+  --radius-xs: 6px; --radius-sm: 10px; --radius-md: 12px; --radius-lg: 18px;
+  --radius-full: 980px;
+
+  /* ancho */
+  --measure-content: 980px;
+  --gutter: 48px;
+
+  /* tipografía: Inter si está instalada, si no la del sistema.
+     Sin @font-face — el informe no puede depender de la red. */
+  --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface-base:    #000000;
+    --surface-raised:  #1d1d1f;
+    --surface-sunken:  #141416;
+    --surface-overlay: #2c2c2e;
+    --ink-primary:     #f5f5f7;
+    --ink-secondary:   #c7c7cc;
+    --ink-tertiary:    #a1a1a6;
+    --ink-inverse:     #1d1d1f;
+    --accent:          #2997ff;
+    --accent-soft:     #0a2a4d;
+    --success:         #30d158;
+    --warning:         #ffd60a;
+    --danger:          #ff453a;
+    --border-subtle:   #38383a;
+    --border-strong:   #636366;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--surface-raised);
+  color: var(--ink-primary);
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 26px;
+  letter-spacing: -0.004em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.hoja {
+  max-width: var(--measure-content);
+  margin: 0 auto;
+  background: var(--surface-base);
+  padding-bottom: var(--space-9);
+}
+
+.gutter { padding-left: var(--gutter); padding-right: var(--gutter); }
+
+/* ---------- Encabezado de marca ----------
+   Tipo sola sobre papel y una línea fina. Lian-Dev no tiene logo, y una banda
+   de color aquí sería lo más ruidoso del informe. */
+.marca {
+  padding-top: var(--space-8);
+  padding-bottom: var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.marca h1 {
+  margin: 0;
+  font-size: 32px;
+  line-height: 38px;
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  color: var(--ink-primary);
+}
+.marca p {
+  margin: var(--space-2) 0 0;
+  font-size: 19px;
+  line-height: 29px;
+  letter-spacing: -0.004em;
+  color: var(--ink-secondary);
+}
+
+/* ---------- Banda de veredicto ----------
+   El bloque A/B/C va relleno en el color de estado con texto ink-inverse, así
+   funciona igual en claro y en oscuro, y en escala de grises conserva la letra. */
+.veredicto {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding-top: var(--space-7);
+  padding-bottom: var(--space-7);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.cat {
+  flex: 0 0 auto;
+  width: 76px; height: 76px;
+  border-radius: var(--radius-lg);
+  display: grid; place-items: center;
+  font-size: 40px; line-height: 1; font-weight: 600; letter-spacing: -0.02em;
+  color: var(--ink-inverse);
+}
+.veredicto h2 {
+  margin: 0;
+  font-size: 24px; line-height: 30px; font-weight: 600; letter-spacing: -0.012em;
+}
+.veredicto .pie {
+  margin: var(--space-2) 0 0;
+  font-size: 13px; line-height: 18px; letter-spacing: 0;
+  color: var(--ink-tertiary);
+}
+.n-ok     .cat { background: var(--success); }
+.n-aviso  .cat { background: var(--warning); }
+.n-alerta .cat { background: var(--danger); }
+
+/* ---------- Ficha de cabecera ---------- */
+.ficha {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0 var(--space-6);
+  padding-top: var(--space-6);
+  padding-bottom: var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.ficha dt {
+  font-size: 12px; line-height: 16px; font-weight: 600;
+  letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--ink-tertiary);
+}
+.ficha dd {
+  margin: var(--space-1) 0 var(--space-5);
+  font-size: 15px; line-height: 22px; font-weight: 500;
+  color: var(--ink-primary);
+}
+
+/* ---------- Secciones ---------- */
+section { padding-top: var(--space-8); }
+h3 {
+  margin: 0 0 var(--space-5);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 21px; line-height: 27px; font-weight: 600; letter-spacing: -0.01em;
+  color: var(--ink-primary);
+}
+
+/* ---------- Tarjetas de producto ---------- */
+.productos { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); }
+.tarjeta {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+}
+.tarjeta .titulo {
+  font-size: 12px; line-height: 16px; font-weight: 600;
+  letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--ink-tertiary);
+}
+/* La píldora de veredicto: contorno en el color de estado, fondo transparente. */
+.sello {
+  display: inline-block;
+  margin: var(--space-3) 0 var(--space-4);
+  padding: 3px var(--space-3);
+  border-radius: var(--radius-full);
+  border: 1px solid;
+  font-size: 13px; line-height: 18px; font-weight: 600; letter-spacing: 0.01em;
+  background: transparent;
+}
+.s-ok     { color: var(--success); border-color: var(--success); }
+.s-aviso  { color: var(--warning); border-color: var(--warning); }
+.s-alerta { color: var(--danger);  border-color: var(--danger); }
+.motivos {
+  margin: 0; padding-left: 20px;
+  font-size: 15px; line-height: 22px;
+  color: var(--ink-secondary);
+}
+.motivos li { margin-bottom: var(--space-2); }
+
+/* ---------- Tablas ----------
+   Sin zebra: la línea fina hace el trabajo y deja el color para los estados. */
+.scroll {
+  overflow-x: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px; line-height: 22px;
+}
+th, td {
+  text-align: left;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: top;
+}
+th {
+  font-size: 12px; line-height: 16px; font-weight: 600;
+  letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--ink-tertiary);
+  white-space: nowrap;
+}
+td.k { color: var(--ink-tertiary); width: 220px; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+tbody tr:last-child td { border-bottom: 0; }
+.mono {
+  font-family: var(--font-mono);
+  font-size: 13px; line-height: 21px; letter-spacing: 0;
+}
+
+.pill {
+  display: inline-block;
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-xs);
+  border: 1px solid;
+  font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.01em;
+  background: transparent;
+}
+.p-ok  { color: var(--success); border-color: var(--success); }
+.p-mal { color: var(--danger);  border-color: var(--danger); }
+
+/* ---------- Avisos ----------
+   El sistema no tiene un callout rojo porque en producto sería demasiado. Aquí
+   sí: el hallazgo de activadores ES el veredicto del informe. Se resuelve con
+   contorno sobre fondo hundido, no con un bloque de color ni una barra lateral. */
+.aviso-caja {
+  border: 1px solid var(--danger);
+  background: var(--surface-sunken);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  font-size: 15px; line-height: 22px;
+}
+.aviso-caja strong { color: var(--danger); font-weight: 600; }
+.aviso-caja ul { margin: var(--space-3) 0 0; padding-left: 20px; color: var(--ink-secondary); }
+.aviso-caja li { margin-bottom: var(--space-2); }
+.aviso-caja .mono { word-break: break-all; }
+.limpio {
+  border: 1px solid var(--success);
+  background: var(--surface-sunken);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  font-size: 15px; line-height: 22px;
+  color: var(--ink-secondary);
+}
+.nota {
+  margin-top: var(--space-3);
+  font-size: 13px; line-height: 18px;
+  color: var(--ink-tertiary);
+}
+.vacio { font-size: 15px; line-height: 22px; color: var(--ink-tertiary); }
+
+/* ---------- Salida cruda ---------- */
+details {
+  margin-top: var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+summary {
+  cursor: pointer;
+  padding: var(--space-3) var(--space-4);
+  font-size: 15px; line-height: 22px; font-weight: 500;
+  color: var(--accent);
+}
+summary:hover { text-decoration: underline; text-underline-offset: 3px; }
+details pre {
+  margin: 0;
+  padding: var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--surface-sunken);
+  color: var(--ink-primary);
+  font-family: var(--font-mono);
+  font-size: 13px; line-height: 21px;
+  white-space: pre-wrap; word-break: break-word;
+}
+
+/* ---------- Limitaciones y pie ---------- */
+.limites {
+  background: var(--surface-raised);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  font-size: 15px; line-height: 22px;
+  color: var(--ink-secondary);
+}
+.limites ul { margin: 0; padding-left: 20px; }
+.limites li { margin-bottom: var(--space-2); }
+.limites li:last-child { margin-bottom: 0; }
+footer {
+  margin-top: var(--space-9);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+  font-size: 13px; line-height: 18px; letter-spacing: 0;
+  color: var(--ink-tertiary);
+  display: flex; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;
+}
+
+/* ---------- Pantallas angostas ---------- */
+@media (max-width: 680px) {
+  :root { --gutter: 22px; }
+  body { font-size: 15px; line-height: 22px; }
+  .marca h1 { font-size: 26px; line-height: 32px; }
+  .marca p { font-size: 17px; line-height: 26px; }
+  .productos { grid-template-columns: 1fr; }
+  .veredicto { gap: var(--space-4); }
+  .cat { width: 60px; height: 60px; font-size: 30px; border-radius: var(--radius-md); }
+  .veredicto h2 { font-size: 21px; line-height: 27px; }
+  td.k { width: auto; white-space: normal; }
+}
+
+/* ---------- Impresión a PDF ----------
+   Siempre en claro: el informe se imprime y se archiva. */
+@media print {
+  :root {
+    --surface-base:    #ffffff;
+    --surface-raised:  #f5f5f7;
+    --surface-sunken:  #fafafc;
+    --ink-primary:     #1d1d1f;
+    --ink-secondary:   #515154;
+    --ink-tertiary:    #6e6e73;
+    --ink-inverse:     #ffffff;
+    --accent:          #0071e3;
+    --success:         #248a3d;
+    --warning:         #8f5a00;
+    --danger:          #d70015;
+    --border-subtle:   #d2d2d7;
+    --gutter: 0px;
+  }
+  body { background: #fff; font-size: 10.5pt; line-height: 1.5; }
+  .hoja { max-width: none; padding-bottom: 0; }
+  .marca { padding-top: 0; }
+  section, .tarjeta, .aviso-caja, .limpio, .limites, table { break-inside: avoid; page-break-inside: avoid; }
+  details { border: 0; }
+  details pre { max-height: none; border-top: 1px solid var(--border-subtle); }
+  summary { display: none; }
+  details[open] pre, details pre { display: block; }
+  .scroll { border: 1px solid var(--border-subtle); }
+  footer { position: static; margin-top: var(--space-7); }
+  @page { margin: 14mm; }
+}
+</style>
+</head>
+<body>
+<div class="hoja">
+
+  <header class="marca gutter">
+    <h1>{{Meta.Marca}}</h1>
+    <p>Auditoría de equipo y licencias de software</p>
+  </header>
+
+  <div class="veredicto gutter n-{{Clasificacion.Nivel}}">
+    <div class="cat">{{Clasificacion.Codigo}}</div>
+    <div>
+      <h2>{{Clasificacion.Texto}}</h2>
+      <p class="pie">A = Windows y Office originales &middot; B = solo uno de los dos &middot; C = ambos no originales</p>
+    </div>
+  </div>
+
+  <dl class="ficha gutter">
+    <div><dt>Equipo</dt><dd>{{Equipo.Nombre}}</dd></div>
+    <div><dt>Marca y modelo</dt><dd>{{Equipo.Fabricante}} {{Equipo.Modelo}}</dd></div>
+    <div><dt>Usuario</dt><dd>{{Equipo.Usuario}}</dd></div>
+    <div><dt>Fecha de la auditoría</dt><dd>{{Meta.Fecha}}</dd></div>
+    <div><dt>Ejecutado como administrador</dt><dd>{{Meta.ComoAdminTexto}}</dd></div>
+  </dl>
+
+  <section class="gutter">
+    <h3>Resultado por producto</h3>
+    <div class="productos">
+
+      <div class="tarjeta">
+        <div class="titulo">Windows</div>
+        {{#si Windows.Original}}<span class="sello s-ok">{{Windows.Veredicto}}</span>{{/si}}
+        {{#no Windows.Original}}<span class="sello s-alerta">{{Windows.Veredicto}}</span>{{/no}}
+        <ul class="motivos">
+          {{#cada Windows.Motivos}}<li>{{.}}</li>{{/cada}}
+        </ul>
+      </div>
+
+      <div class="tarjeta">
+        <div class="titulo">Microsoft Office</div>
+        {{#no Office.Instalado}}<span class="sello s-aviso">{{Office.Veredicto}}</span>{{/no}}
+        {{#si Office.Instalado}}
+          {{#si Office.Original}}<span class="sello s-ok">{{Office.Veredicto}}</span>{{/si}}
+          {{#no Office.Original}}<span class="sello s-alerta">{{Office.Veredicto}}</span>{{/no}}
+        {{/si}}
+        <ul class="motivos">
+          {{#cada Office.Motivos}}<li>{{.}}</li>{{/cada}}
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="gutter">
+    <h3>Indicadores de activadores piratas</h3>
+    {{#si Indicadores}}
+    <div class="aviso-caja">
+      <strong>Se encontraron rastros de herramientas de activación no autorizadas en este equipo.</strong>
+      <ul>
+        {{#cada Indicadores}}<li class="mono">{{.}}</li>{{/cada}}
+      </ul>
+    </div>
+    {{/si}}
+    {{#no Indicadores}}
+    <div class="limpio">No se detectaron activadores piratas conocidos en este equipo.</div>
+    {{/no}}
+  </section>
+
+  <section class="gutter">
+    <h3>Hardware</h3>
+    <div class="scroll">
+      <table>
+        <tr><td class="k">Equipo</td><td>{{Equipo.Fabricante}} {{Equipo.Modelo}}</td></tr>
+        <tr><td class="k">Nombre en red</td><td>{{Equipo.Nombre}}</td></tr>
+        <tr><td class="k">Red</td><td>{{Equipo.Red}}</td></tr>
+        <tr><td class="k">Placa madre</td><td>{{Equipo.PlacaMadre}}</td></tr>
+        <tr><td class="k">BIOS</td><td>{{Equipo.Bios.Fabricante}} {{Equipo.Bios.Version}} &middot; N/S <span class="mono">{{Equipo.Bios.Serie}}</span></td></tr>
+        {{#cada Equipo.Cpu}}
+        <tr><td class="k">Procesador</td><td>{{Nombre}} &middot; {{Nucleos}} núcleos / {{Hilos}} hilos</td></tr>
+        {{/cada}}
+        <tr><td class="k">Memoria RAM</td><td>{{Equipo.RamTotalGB}} GB{{#cada Equipo.Modulos}} &middot; {{CapacidadGB}} GB {{VelocidadMHz}} MHz {{Fabricante}}{{/cada}}</td></tr>
+        {{#cada Equipo.Discos}}
+        <tr><td class="k">Disco</td><td>{{Modelo}} &middot; {{TamanoGB}} GB [{{Interfaz}}]</td></tr>
+        {{/cada}}
+        {{#cada Equipo.Video}}
+        <tr><td class="k">Video</td><td>{{.}}</td></tr>
+        {{/cada}}
+        <tr><td class="k">Sistema operativo</td><td>{{Equipo.SO.Caption}} {{Equipo.SO.Arquitectura}} &middot; versión {{Equipo.SO.Version}} (build {{Equipo.SO.Build}})</td></tr>
+        <tr><td class="k">Instalado el</td><td>{{Equipo.SO.Instalado}}</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="gutter">
+    <h3>Detalle de la licencia de Windows</h3>
+    {{#si Windows.Encontrada}}
+    <div class="scroll">
+      <table>
+        <tr><td class="k">Edición</td><td>{{Windows.Edicion}}</td></tr>
+        <tr><td class="k">Descripción</td><td>{{Windows.Descripcion}}</td></tr>
+        <tr><td class="k">Canal de la clave</td><td>{{Windows.Canal}}</td></tr>
+        <tr><td class="k">Últimos 5 caracteres</td><td class="mono">{{Windows.Ultimos5}}</td></tr>
+        <tr><td class="k">Estado</td><td>{{Windows.Estado}}</td></tr>
+        {{#si Windows.GraciaDias}}<tr><td class="k">Gracia restante</td><td>{{Windows.GraciaDias}} día(s)</td></tr>{{/si}}
+        {{#si Windows.ClaveOEM.Existe}}<tr><td class="k">Clave OEM en el BIOS</td><td>{{Windows.ClaveOEM.Texto}}</td></tr>{{/si}}
+      </table>
+    </div>
+    {{#si Windows.Nota}}<p class="nota">{{Windows.Nota}}</p>{{/si}}
+    {{#si Windows.ServidoresKMS}}
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Servidor KMS</th><th>Detectado en</th><th>Confianza</th><th>Evaluación</th></tr></thead>
+        <tbody>
+        {{#cada Windows.ServidoresKMS}}
+          <tr>
+            <td class="mono">{{Host}}</td>
+            <td>{{Fuente}}</td>
+            <td>{{#si Confiable}}<span class="pill p-ok">confiable</span>{{/si}}{{#no Confiable}}<span class="pill p-mal">no confiable</span>{{/no}}</td>
+            <td>{{Motivo}}</td>
+          </tr>
+        {{/cada}}
+        </tbody>
+      </table>
+    </div>
+    {{/si}}
+    {{#si Windows.SalidaCruda}}
+    <details><summary>Ver salida de slmgr /dli</summary><pre>{{Windows.SalidaCruda}}</pre></details>
+    {{/si}}
+    {{/si}}
+    {{#no Windows.Encontrada}}
+    <p class="vacio">No se encontró ninguna licencia de Windows instalada en este equipo.</p>
+    {{/no}}
+  </section>
+
+  <section class="gutter">
+    <h3>Detalle de la licencia de Office</h3>
+    {{#no Office.Instalado}}
+    <p class="vacio">Microsoft Office no está instalado en este equipo.</p>
+    {{/no}}
+    {{#si Office.Instalado}}
+      {{#si Office.ProductosInstalados}}
+      <div class="scroll">
+        <table>
+          {{#cada Office.ProductosInstalados}}<tr><td class="k">Producto instalado</td><td>{{.}}</td></tr>{{/cada}}
+        </table>
+      </div>
+      {{/si}}
+      {{#si Office.Licencias}}
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Licencia</th><th>Canal</th><th>Estado</th><th>Clave</th></tr></thead>
+          <tbody>
+          {{#cada Office.Licencias}}
+            <tr>
+              <td>{{Nombre}}{{#si Nota}}<div class="nota">{{Nota}}</div>{{/si}}</td>
+              <td>{{Canal}}</td>
+              <td>{{#si Activada}}<span class="pill p-ok">{{Estado}}</span>{{/si}}{{#no Activada}}<span class="pill p-mal">{{Estado}}</span>{{/no}}</td>
+              <td class="mono">{{Ultimos5}}</td>
+            </tr>
+          {{/cada}}
+          </tbody>
+        </table>
+      </div>
+      {{/si}}
+      {{#si Office.ServidoresKMS}}
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Servidor KMS</th><th>Detectado en</th><th>Confianza</th><th>Evaluación</th></tr></thead>
+          <tbody>
+          {{#cada Office.ServidoresKMS}}
+            <tr>
+              <td class="mono">{{Host}}</td>
+              <td>{{Fuente}}</td>
+              <td>{{#si Confiable}}<span class="pill p-ok">confiable</span>{{/si}}{{#no Confiable}}<span class="pill p-mal">no confiable</span>{{/no}}</td>
+              <td>{{Motivo}}</td>
+            </tr>
+          {{/cada}}
+          </tbody>
+        </table>
+      </div>
+      {{/si}}
+      {{#si Office.SalidaCruda}}
+      <details><summary>Ver salida de ospp.vbs /dstatus</summary><pre>{{Office.SalidaCruda}}</pre></details>
+      {{/si}}
+    {{/si}}
+  </section>
+
+  <section class="gutter">
+    <h3>Alcance y limitaciones</h3>
+    <div class="limites">
+      <ul>
+        {{#cada Limitaciones}}<li>{{.}}</li>{{/cada}}
+      </ul>
+    </div>
+  </section>
+
+  <footer class="gutter">
+    <span>{{Meta.Marca}} &middot; informe generado automáticamente el {{Meta.Fecha}}</span>
+    <span>v{{Meta.Version}}</span>
+  </footer>
+
+</div>
+</body>
+</html>
